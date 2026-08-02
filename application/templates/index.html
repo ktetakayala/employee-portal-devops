@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Employee Portal</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+</head>
+
+<body>
+    <header class="header">
+        <div>
+            <h1>Employee Portal</h1>
+            <p>Internal company dashboard</p>
+        </div>
+
+        <button class="login-button">Employee Login</button>
+    </header>
+
+    <main class="container">
+        <section class="welcome">
+            <h2>Welcome, {{ employee.name }}</h2>
+            <p>Access employee information, announcements and HR resources.</p>
+        </section>
+
+        <section class="dashboard-grid">
+            <article class="card">
+                <h3>Employee Profile</h3>
+                <p><strong>ID:</strong> {{ employee.employee_id }}</p>
+                <p><strong>Department:</strong> {{ employee.department }}</p>
+                <p><strong>Position:</strong> {{ employee.job_title }}</p>
+            </article>
+
+            <article class="card">
+                <h3>Leave Balance</h3>
+                <p class="large-number">{{ employee.leave_balance }}</p>
+                <p>Available leave days</p>
+            </article>
+
+            <article class="card">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="#">HR Policies</a></li>
+                    <li><a href="#">Leave Application</a></li>
+                    <li><a href="#">Employee Handbook</a></li>
+                    <li><a href="#">IT Support</a></li>
+                </ul>
+            </article>
+        </section>
+
+        <section class="content-grid">
+            <article class="card">
+                <h3>Company Announcements</h3>
+
+                {% for announcement in announcements %}
+                    <div class="announcement">
+                        <h4>{{ announcement.title }}</h4>
+                        <p>{{ announcement.description }}</p>
+                    </div>
+                {% endfor %}
+            </article>
+
+            <article class="card">
+                <h3>Departments</h3>
+
+                <ul>
+                    {% for department in departments %}
+                        <li>{{ department }}</li>
+                    {% endfor %}
+                </ul>
+            </article>
+        </section>
+    </main>
+
+    <footer>
+        Employee Portal — Internal Use Only
+    </footer>
+</body>
+</html>
