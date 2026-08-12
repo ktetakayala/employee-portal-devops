@@ -92,17 +92,18 @@ jobs:
         env:
           RUNNER_CIDR: ${{ steps.runner_ip.outputs.cidr }}
         run: |
+          echo "Checking SSH access for GitHub runner: $RUNNER_CIDR"
+
           EXISTING_RULE=$(aws ec2 describe-security-group-rules \
-            --filters \
-              "Name=group-id,Values=$SECURITY_GROUP_ID" \
-              "Name=is-egress,Values=false" \
-              "Name=ip-permission.from-port,Values=22" \
-              "Name=ip-permission.to-port,Values=22" \
-              "Name=ip-permission.cidr,Values=$RUNNER_CIDR" \
-            --query 'SecurityGroupRules[0].SecurityGroupRuleId' \
+            --filters "Name=group-id,Values=$SECURITY_GROUP_ID" \
+            --query "SecurityGroupRules[?IsEgress==\`false\` && IpProtocol=='tcp' && FromPort==\`22\` && ToPort==\`22\` && CidrIpv4=='$RUNNER_CIDR'].SecurityGroupRuleId | [0]" \
             --output text)
 
-          if [ "$EXISTING_RULE" = "None" ]; then
+          echo "Existing rule: $EXISTING_RULE"
+
+          if [ "$EXISTING_RULE" = "None" ] || [ -z "$EXISTING_RULE" ]; then
+
+            echo "Creating temporary SSH rule..."
 
             RULE_ID=$(aws ec2 authorize-security-group-ingress \
               --group-id "$SECURITY_GROUP_ID" \
@@ -119,11 +120,48 @@ jobs:
 
           else
 
-            echo "SSH access already exists for $RUNNER_CIDR"
+            echo "SSH rule already exists: $EXISTING_RULE"
 
             echo "SSH_RULE_CREATED=false" >> "$GITHUB_ENV"
 
           fi
+      # - name: Temporarily allow GitHub runner SSH
+      #   id: authorize_ssh
+      #   env:
+      #     RUNNER_CIDR: ${{ steps.runner_ip.outputs.cidr }}
+      #   run: |
+      #     EXISTING_RULE=$(aws ec2 describe-security-group-rules \
+      #       --filters \
+      #         "Name=group-id,Values=$SECURITY_GROUP_ID" \
+      #         "Name=is-egress,Values=false" \
+      #         "Name=ip-permission.from-port,Values=22" \
+      #         "Name=ip-permission.to-port,Values=22" \
+      #         "Name=ip-permission.cidr,Values=$RUNNER_CIDR" \
+      #       --query 'SecurityGroupRules[0].SecurityGroupRuleId' \
+      #       --output text)
+
+      #     if [ "$EXISTING_RULE" = "None" ]; then
+
+      #       RULE_ID=$(aws ec2 authorize-security-group-ingress \
+      #         --group-id "$SECURITY_GROUP_ID" \
+      #         --protocol tcp \
+      #         --port 22 \
+      #         --cidr "$RUNNER_CIDR" \
+      #         --query 'SecurityGroupRules[0].SecurityGroupRuleId' \
+      #         --output text)
+
+      #       echo "Created temporary SSH rule: $RULE_ID"
+
+      #       echo "SSH_RULE_CREATED=true" >> "$GITHUB_ENV"
+      #       echo "SSH_RULE_ID=$RULE_ID" >> "$GITHUB_ENV"
+
+      #     else
+
+      #       echo "SSH access already exists for $RUNNER_CIDR"
+
+      #       echo "SSH_RULE_CREATED=false" >> "$GITHUB_ENV"
+
+      #     fi
 
       - name: Prepare SSH key
         run: |
