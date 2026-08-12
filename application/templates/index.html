@@ -4,81 +4,913 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Employee Portal</title>
+    <title>DevOps Portfolio | Employee Portal CI/CD</title>
 
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='style.css') }}"
     >
+
+    <style>
+        :root {
+            --bg: #0b1120;
+            --bg-secondary: #111827;
+            --card: #172033;
+            --card-hover: #1f2a44;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --primary: #38bdf8;
+            --secondary: #818cf8;
+            --success: #22c55e;
+            --border: #26334d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 8%;
+            border-bottom: 1px solid var(--border);
+            background: rgba(11, 17, 32, 0.95);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .brand span {
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .nav-links a {
+            color: var(--text);
+            font-size: 14px;
+        }
+
+        .hero {
+            min-height: 78vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 8%;
+            text-align: center;
+            background:
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.14), transparent 30%),
+                radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.16), transparent 30%);
+        }
+
+        .hero-content {
+            max-width: 900px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 7px 16px;
+            border-radius: 30px;
+            background: rgba(34, 197, 94, 0.15);
+            color: #86efac;
+            border: 1px solid rgba(34, 197, 94, 0.4);
+            margin-bottom: 22px;
+            font-size: 14px;
+        }
+
+        .hero h1 {
+            font-size: clamp(38px, 6vw, 68px);
+            line-height: 1.1;
+            margin: 0 0 24px;
+        }
+
+        .gradient-text {
+            background: linear-gradient(
+                90deg,
+                var(--primary),
+                var(--secondary)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            max-width: 760px;
+            margin: 0 auto 30px;
+            color: var(--muted);
+            font-size: 18px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 22px;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: 0.2s ease;
+        }
+
+        .button-primary {
+            background: var(--primary);
+            color: #07111f;
+        }
+
+        .button-secondary {
+            border: 1px solid var(--border);
+            color: var(--text);
+            background: var(--card);
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        .section {
+            padding: 80px 8%;
+        }
+
+        .section-alt {
+            background: var(--bg-secondary);
+        }
+
+        .section-header {
+            max-width: 760px;
+            margin-bottom: 40px;
+        }
+
+        .section-header h2 {
+            font-size: 34px;
+            margin-bottom: 12px;
+        }
+
+        .section-header p {
+            color: var(--muted);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(250px, 1fr));
+            gap: 22px;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 26px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            transition: 0.25s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            background: var(--card-hover);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            color: var(--primary);
+        }
+
+        .card p,
+        .card li {
+            color: var(--muted);
+        }
+
+        .technology {
+            text-align: center;
+        }
+
+        .technology strong {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 8px;
+        }
+
+        .architecture {
+            background: #050a14;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        .architecture pre {
+            margin: 0;
+            color: #cbd5e1;
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        .pipeline {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-top: 30px;
+        }
+
+        .pipeline-step {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 13px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .arrow {
+            color: var(--primary);
+            font-size: 22px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #86efac;
+            font-weight: bold;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        .phase-number {
+            width: 42px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(56, 189, 248, 0.14);
+            color: var(--primary);
+            border-radius: 50%;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .highlight {
+            color: var(--primary);
+        }
+
+        .deployment-box {
+            background: linear-gradient(
+                135deg,
+                rgba(56, 189, 248, 0.10),
+                rgba(129, 140, 248, 0.10)
+            );
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 36px;
+        }
+
+        footer {
+            padding: 35px 8%;
+            text-align: center;
+            color: var(--muted);
+            border-top: 1px solid var(--border);
+        }
+
+        @media (max-width: 700px) {
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .section {
+                padding: 60px 6%;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <header class="header">
-        <div>
-            <h1>Employee Portal</h1>
-            <p>Internal company dashboard</p>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="brand">
+            DevOps<span>Portfolio</span>
         </div>
 
-        <button class="login-button">Employee Login</button>
-    </header>
+        <div class="nav-links">
+            <a href="#about">About</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#technologies">Technologies</a>
+            <a href="#pipeline">CI/CD</a>
+            <a href="#journey">Journey</a>
+        </div>
+    </nav>
 
-    <main class="container">
-        <section class="welcome">
-            <h2>Welcome, {{ employee.name }}</h2>
-            <p>Access employee information, announcements and HR resources.</p>
-        </section>
 
-        <section class="dashboard-grid">
+    <!-- Hero Section -->
+    <section class="hero">
+
+        <div class="hero-content">
+
+            <div class="badge">
+                ● Deployed Successfully on AWS
+            </div>
+
+            <h1>
+                Automated CI/CD Pipeline
+                <span class="gradient-text">
+                    for Employee Portal
+                </span>
+            </h1>
+
+            <p>
+                A hands-on DevOps project demonstrating automated
+                infrastructure provisioning, containerization,
+                continuous integration and continuous deployment
+                using Terraform, Docker, GitHub Actions,
+                Amazon ECR and AWS EC2.
+            </p>
+
+            <div class="hero-buttons">
+
+                <a href="#architecture"
+                   class="button button-primary">
+                    View Architecture
+                </a>
+
+                <a href="#pipeline"
+                   class="button button-secondary">
+                    Explore Pipeline
+                </a>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- About Project -->
+    <section class="section" id="about">
+
+        <div class="section-header">
+            <h2>About the Project</h2>
+
+            <p>
+                The objective of this project is to simulate a
+                real-world DevOps deployment where developers can
+                push application changes to GitHub and automatically
+                deploy the latest version to an AWS EC2 instance.
+            </p>
+        </div>
+
+        <div class="grid">
+
             <article class="card">
-                <h3>Employee Profile</h3>
-                <p><strong>ID:</strong> {{ employee.employee_id }}</p>
-                <p><strong>Department:</strong> {{ employee.department }}</p>
-                <p><strong>Position:</strong> {{ employee.job_title }}</p>
+                <h3>Infrastructure as Code</h3>
+
+                <p>
+                    AWS infrastructure is provisioned and managed
+                    using Terraform, including EC2, networking,
+                    security groups, IAM roles, ECR and Elastic IP.
+                </p>
+            </article>
+
+
+            <article class="card">
+                <h3>Containerization</h3>
+
+                <p>
+                    The Flask Employee Portal is packaged into a
+                    Docker image using Python 3.12 and Gunicorn.
+                </p>
+            </article>
+
+
+            <article class="card">
+                <h3>Continuous Integration</h3>
+
+                <p>
+                    GitHub Actions installs application dependencies
+                    and executes automated tests before any deployment
+                    takes place.
+                </p>
+            </article>
+
+
+            <article class="card">
+                <h3>Continuous Deployment</h3>
+
+                <p>
+                    Successful builds are automatically pushed to
+                    Amazon ECR and deployed to the EC2 Docker host.
+                </p>
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <!-- Architecture -->
+    <section class="section section-alt" id="architecture">
+
+        <div class="section-header">
+            <h2>Cloud Architecture</h2>
+
+            <p>
+                The application follows a simple but practical
+                container-based deployment architecture on AWS.
+            </p>
+        </div>
+
+        <div class="architecture">
+<pre>
+Developer
+    |
+    | git push
+    v
+GitHub Repository
+    |
+    v
+GitHub Actions
+    |
+    | OIDC Authentication
+    v
+AWS IAM Role
+    |
+    +----------------------+
+    |                      |
+    v                      v
+Docker Build          Security Group
+    |                 Temporary SSH
+    v
+Amazon ECR
+    |
+    | docker pull
+    v
+AWS EC2
+Ubuntu 24.04
+    |
+    v
+Docker Engine
+    |
+    v
+Employee Portal Container
+    |
+    | Port 5000
+    v
+EC2 Port 80
+    |
+    v
+Users / Browser
+</pre>
+        </div>
+
+    </section>
+
+
+    <!-- Technologies -->
+    <section class="section" id="technologies">
+
+        <div class="section-header">
+            <h2>Technology Stack</h2>
+
+            <p>
+                Tools and cloud services used to build the complete
+                deployment workflow.
+            </p>
+        </div>
+
+        <div class="grid">
+
+            <article class="card technology">
+                <strong>Terraform</strong>
+                <span>Infrastructure as Code</span>
+            </article>
+
+            <article class="card technology">
+                <strong>AWS EC2</strong>
+                <span>Application Host</span>
+            </article>
+
+            <article class="card technology">
+                <strong>Amazon ECR</strong>
+                <span>Docker Registry</span>
+            </article>
+
+            <article class="card technology">
+                <strong>Docker</strong>
+                <span>Containerization</span>
+            </article>
+
+            <article class="card technology">
+                <strong>GitHub Actions</strong>
+                <span>CI/CD Automation</span>
+            </article>
+
+            <article class="card technology">
+                <strong>AWS IAM</strong>
+                <span>Access Management</span>
+            </article>
+
+            <article class="card technology">
+                <strong>GitHub OIDC</strong>
+                <span>AWS Authentication</span>
+            </article>
+
+            <article class="card technology">
+                <strong>Flask</strong>
+                <span>Web Application</span>
+            </article>
+
+            <article class="card technology">
+                <strong>Gunicorn</strong>
+                <span>Production Web Server</span>
+            </article>
+
+            <article class="card technology">
+                <strong>Ubuntu Linux</strong>
+                <span>EC2 Operating System</span>
+            </article>
+
+            <article class="card technology">
+                <strong>SSH</strong>
+                <span>Remote Deployment</span>
+            </article>
+
+            <article class="card technology">
+                <strong>Git</strong>
+                <span>Version Control</span>
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <!-- CI/CD Pipeline -->
+    <section class="section section-alt" id="pipeline">
+
+        <div class="section-header">
+            <h2>Automated CI/CD Pipeline</h2>
+
+            <p>
+                Every application change pushed to the main branch
+                automatically moves through the complete deployment
+                workflow.
+            </p>
+        </div>
+
+        <div class="pipeline">
+
+            <div class="pipeline-step">
+                Git Push
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                Run Tests
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                AWS OIDC
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                Docker Build
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                Push to ECR
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                SSH EC2
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                Docker Pull
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                Deploy
+            </div>
+
+            <span class="arrow">→</span>
+
+            <div class="pipeline-step">
+                Health Check
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Project Journey -->
+    <section class="section" id="journey">
+
+        <div class="section-header">
+            <h2>Project Journey</h2>
+
+            <p>
+                The project was implemented incrementally so that
+                every component could be tested independently before
+                introducing full automation.
+            </p>
+        </div>
+
+        <div class="grid">
+
+            <article class="card">
+
+                <div class="phase-number">1</div>
+
+                <h3>Application & Docker</h3>
+
+                <p>
+                    Created the Flask Employee Portal application,
+                    added health checks and containerized the
+                    application using Docker.
+                </p>
+
+                <div class="status">
+                    <span class="status-dot"></span>
+                    Completed
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <div class="phase-number">2</div>
+
+                <h3>Git & GitHub</h3>
+
+                <p>
+                    Created the Git repository, configured version
+                    control and pushed the application source code
+                    to GitHub.
+                </p>
+
+                <div class="status">
+                    <span class="status-dot"></span>
+                    Completed
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <div class="phase-number">3</div>
+
+                <h3>AWS Infrastructure</h3>
+
+                <p>
+                    Provisioned EC2, Elastic IP, Security Groups,
+                    IAM roles and Amazon ECR using Terraform.
+                    Manually verified the full ECR-to-EC2 deployment.
+                </p>
+
+                <div class="status">
+                    <span class="status-dot"></span>
+                    Completed
+                </div>
+
+            </article>
+
+
+            <article class="card">
+
+                <div class="phase-number">4</div>
+
+                <h3>GitHub Actions CI/CD</h3>
+
+                <p>
+                    Automated testing, Docker image creation,
+                    ECR publishing and remote EC2 deployment
+                    through GitHub Actions.
+                </p>
+
+                <div class="status">
+                    <span class="status-dot"></span>
+                    Implemented
+                </div>
+
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <!-- Security -->
+    <section class="section section-alt">
+
+        <div class="section-header">
+            <h2>Security Practices</h2>
+
+            <p>
+                Security controls were included as part of the
+                deployment design instead of being added later.
+            </p>
+        </div>
+
+        <div class="grid">
+
+            <article class="card">
+                <h3>AWS OIDC</h3>
+
+                <p>
+                    GitHub Actions authenticates to AWS using
+                    temporary OIDC credentials instead of storing
+                    long-lived AWS access keys.
+                </p>
+            </article>
+
+
+            <article class="card">
+                <h3>Least Privilege IAM</h3>
+
+                <p>
+                    Separate IAM permissions are used for GitHub
+                    Actions and EC2, with access limited to the
+                    operations required by each component.
+                </p>
+            </article>
+
+
+            <article class="card">
+                <h3>Restricted SSH</h3>
+
+                <p>
+                    GitHub runner IP addresses are temporarily
+                    allowed on port 22 during deployment and removed
+                    after the deployment finishes.
+                </p>
+            </article>
+
+
+            <article class="card">
+                <h3>Non-Root Container</h3>
+
+                <p>
+                    The Employee Portal container runs using a
+                    dedicated non-root application user.
+                </p>
+            </article>
+
+        </div>
+
+    </section>
+
+
+    <!-- Deployment Status -->
+    <section class="section">
+
+        <div class="deployment-box">
+
+            <div class="status">
+                <span class="status-dot"></span>
+                APPLICATION HEALTHY
+            </div>
+
+            <h2>
+                Employee Portal Deployment
+            </h2>
+
+            <p>
+                This page is itself running inside the Docker
+                container deployed to AWS EC2 through the
+                Employee Portal DevOps project.
+            </p>
+
+            <p>
+                The next deployment of this page will demonstrate
+                the complete
+                <span class="highlight">
+                    GitHub Actions CI/CD pipeline
+                </span>
+                from source-code change to production deployment.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- What I Learned -->
+    <section class="section section-alt">
+
+        <div class="section-header">
+            <h2>Key Learning Outcomes</h2>
+        </div>
+
+        <div class="grid">
+
+            <article class="card">
+                <h3>Infrastructure</h3>
+                <p>
+                    Terraform, EC2, VPC networking, Security Groups,
+                    Elastic IPs and infrastructure troubleshooting.
+                </p>
             </article>
 
             <article class="card">
-                <h3>Leave Balance</h3>
-                <p class="large-number">{{ employee.leave_balance }}</p>
-                <p>Available leave days</p>
+                <h3>Containers</h3>
+                <p>
+                    Docker images, containers, registries,
+                    port mappings, health checks and ECR workflows.
+                </p>
             </article>
 
             <article class="card">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="#">HR Policies</a></li>
-                    <li><a href="#">Leave Application</a></li>
-                    <li><a href="#">Employee Handbook</a></li>
-                    <li><a href="#">IT Support</a></li>
-                </ul>
-            </article>
-        </section>
-
-        <section class="content-grid">
-            <article class="card">
-                <h3>Company Announcements</h3>
-
-                {% for announcement in announcements %}
-                    <div class="announcement">
-                        <h4>{{ announcement.title }}</h4>
-                        <p>{{ announcement.description }}</p>
-                    </div>
-                {% endfor %}
+                <h3>Cloud Security</h3>
+                <p>
+                    IAM roles, instance profiles, OIDC,
+                    least-privilege policies and secure SSH access.
+                </p>
             </article>
 
             <article class="card">
-                <h3>Departments</h3>
-
-                <ul>
-                    {% for department in departments %}
-                        <li>{{ department }}</li>
-                    {% endfor %}
-                </ul>
+                <h3>CI/CD</h3>
+                <p>
+                    Automated testing, Docker builds, ECR publishing,
+                    deployment automation and pipeline debugging.
+                </p>
             </article>
-        </section>
-    </main>
+
+        </div>
+
+    </section>
+
 
     <footer>
-        Employee Portal — Internal Use Only
+        <p>
+            Automated CI/CD Pipeline for Employee Portal on AWS
+        </p>
+
+        <p>
+            Built with Terraform • Docker • AWS • GitHub Actions
+        </p>
     </footer>
+
 </body>
 </html>
