@@ -1,0 +1,218 @@
+name: Employee Portal CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "application/**"
+      - ".github/workflows/deploy.yml"
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+  EC2_HOST: ${{ vars.EC2_HOST }}
+  EC2_USER: ${{ vars.EC2_USER }}
+  SECURITY_GROUP_ID: ${{ vars.SECURITY_GROUP_ID }}
+
+jobs:
+  deploy:
+    name: Test, Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: application/requirements.txt
+
+      - name: Install Python dependencies
+        working-directory: application
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: application
+        run: |
+          python -m unittest discover -s tests -v
+
+      - name: Configure AWS credentials using OIDC
+        id: aws_credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      - name: Login to Amazon ECR
+        id: login_ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push Docker image
+        working-directory: application
+        env:
+          ECR_REGISTRY: ${{ steps.login_ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" \
+            -t "$ECR_REGISTRY/$ECR_REPOSITORY:latest" \
+            .
+
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+
+      - name: Get GitHub runner public IP
+        id: runner_ip
+        run: |
+          RUNNER_IP=$(curl -fsS https://checkip.amazonaws.com | tr -d '\n')
+
+          echo "GitHub runner IP: $RUNNER_IP"
+
+          echo "cidr=$RUNNER_IP/32" >> "$GITHUB_OUTPUT"
+
+      - name: Temporarily allow GitHub runner SSH
+        id: authorize_ssh
+        env:
+          RUNNER_CIDR: ${{ steps.runner_ip.outputs.cidr }}
+        run: |
+          EXISTING_RULE=$(aws ec2 describe-security-group-rules \
+            --filters \
+              "Name=group-id,Values=$SECURITY_GROUP_ID" \
+              "Name=is-egress,Values=false" \
+              "Name=ip-permission.from-port,Values=22" \
+              "Name=ip-permission.to-port,Values=22" \
+              "Name=ip-permission.cidr,Values=$RUNNER_CIDR" \
+            --query 'SecurityGroupRules[0].SecurityGroupRuleId' \
+            --output text)
+
+          if [ "$EXISTING_RULE" = "None" ]; then
+
+            RULE_ID=$(aws ec2 authorize-security-group-ingress \
+              --group-id "$SECURITY_GROUP_ID" \
+              --protocol tcp \
+              --port 22 \
+              --cidr "$RUNNER_CIDR" \
+              --query 'SecurityGroupRules[0].SecurityGroupRuleId' \
+              --output text)
+
+            echo "Created temporary SSH rule: $RULE_ID"
+
+            echo "SSH_RULE_CREATED=true" >> "$GITHUB_ENV"
+            echo "SSH_RULE_ID=$RULE_ID" >> "$GITHUB_ENV"
+
+          else
+
+            echo "SSH access already exists for $RUNNER_CIDR"
+
+            echo "SSH_RULE_CREATED=false" >> "$GITHUB_ENV"
+
+          fi
+
+      - name: Prepare SSH key
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.EC2_SSH_PRIVATE_KEY }}" \
+            > ~/.ssh/employee-portal-deploy
+
+          chmod 600 ~/.ssh/employee-portal-deploy
+
+          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          ssh \
+            -i ~/.ssh/employee-portal-deploy \
+            "$EC2_USER@$EC2_HOST" \
+            "AWS_REGION='$AWS_REGION' ECR_REPOSITORY='$ECR_REPOSITORY' IMAGE_TAG='$IMAGE_TAG' bash -s" <<'REMOTE'
+
+          set -euo pipefail
+
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity \
+            --query Account \
+            --output text)
+
+          REGISTRY="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com"
+
+          IMAGE_URI="$REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+          echo "Deploying image:"
+          echo "$IMAGE_URI"
+
+          aws ecr get-login-password \
+            --region "$AWS_REGION" |
+          docker login \
+            --username AWS \
+            --password-stdin "$REGISTRY"
+
+          docker pull "$IMAGE_URI"
+
+          docker rm -f employee-portal 2>/dev/null || true
+
+          docker run -d \
+            --name employee-portal \
+            --restart unless-stopped \
+            -p 80:5000 \
+            "$IMAGE_URI"
+
+          echo "Waiting for application health check..."
+
+          for attempt in $(seq 1 12); do
+
+            if curl -fsS http://localhost/health; then
+              echo
+              echo "Employee Portal deployment is healthy."
+              exit 0
+            fi
+
+            echo "Health check attempt $attempt failed."
+            sleep 5
+
+          done
+
+          echo "Application failed health check."
+
+          docker ps -a
+          docker logs employee-portal
+
+          exit 1
+
+          REMOTE
+
+      - name: Remove temporary GitHub runner SSH rule
+        if: always() && steps.runner_ip.outcome == 'success'
+        run: |
+          if [ "${SSH_RULE_CREATED:-false}" = "true" ] && \
+             [ -n "${SSH_RULE_ID:-}" ]; then
+
+            echo "Removing temporary SSH rule $SSH_RULE_ID"
+
+            aws ec2 revoke-security-group-ingress \
+              --group-id "$SECURITY_GROUP_ID" \
+              --security-group-rule-ids "$SSH_RULE_ID"
+
+          else
+
+            echo "No temporary SSH rule needs removal."
+
+          fi
